@@ -2,11 +2,6 @@ package eu.esa.sar.io.iceye;
 
 import com.bc.ceres.core.ProgressMonitor;
 
-import eu.esa.sar.commons.io.JSONProductDirectory;
-import eu.esa.sar.commons.io.SARReader;
-import eu.esa.sar.commons.product.Missions;
-import eu.esa.sar.io.geotiffxml.GeoTiffUtils;
-import eu.esa.sar.io.iceye.util.IceyeConstants;
 import it.geosolutions.imageioimpl.plugins.tiff.TIFFIFD;
 import it.geosolutions.imageioimpl.plugins.tiff.TIFFImageMetadata;
 import it.geosolutions.imageioimpl.plugins.tiff.TIFFImageReader;
@@ -32,13 +27,18 @@ import org.json.simple.parser.JSONParser;
 import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
+import org.xml.sax.InputSource;
 import org.esa.snap.core.datamodel.Product;
 
 import javax.imageio.ImageIO;
 import javax.imageio.ImageReadParam;
 import javax.imageio.stream.ImageInputStream;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+
 import java.io.File;
 import java.io.IOException;
+import java.io.StringReader;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -47,7 +47,10 @@ import java.awt.image.DataBuffer;
 import java.awt.image.Raster;
 import java.awt.image.RenderedImage;
 
-
+import eu.esa.sar.commons.io.JSONProductDirectory;
+import eu.esa.sar.commons.io.SARReader;
+import eu.esa.sar.commons.product.Missions;
+import eu.esa.sar.io.geotiffxml.GeoTiffUtils;
 
 public abstract class IceyeAMLCPXProductReader extends SARReader {
 
@@ -87,8 +90,8 @@ public abstract class IceyeAMLCPXProductReader extends SARReader {
 
             TIFFIFD rootIFD = tiffMetadata.getRootIFD();
 
-            String xmlString = rootIFD.getTIFFField(IceyeConstants.TIFFTagGDAL_METADATA).getAsString(0);
-            Document xmlRoot = IceyeGRDProductReader.convertStringToXMLDocument(xmlString);
+            String xmlString = rootIFD.getTIFFField(IceyeStacConstants.TIFFTagGDAL_METADATA).getAsString(0);
+            Document xmlRoot = convertStringToXMLDocument(xmlString);
 
             if (xmlRoot == null || xmlRoot.getFirstChild() == null
                     || xmlRoot.getFirstChild().getChildNodes() == null) {
@@ -99,7 +102,7 @@ public abstract class IceyeAMLCPXProductReader extends SARReader {
             Node metadataXML = xmlRoot.getFirstChild();
             for (Node child = metadataXML.getFirstChild(); child != null; child = child.getNextSibling()) {
                 NamedNodeMap attributes = child.getAttributes();
-                if (attributes != null && attributes.item(0).getNodeValue().equals(IceyeConstants.METADATA_JSON)) {
+                if (attributes != null && attributes.item(0).getNodeValue().equals(IceyeStacConstants.ICEYE_PROPERTIES)) {
                     metadataJSON = parseMetadataJSON(child.getTextContent());
                     break;
                 }
@@ -111,9 +114,9 @@ public abstract class IceyeAMLCPXProductReader extends SARReader {
             }
 
             // NOTE: ICEYE images are stored in shadows-down orientation
-            imageHeight = rootIFD.getTIFFField(IceyeConstants.TIFFTagImageWidth).getAsInt(0);
-            imageWidth = rootIFD.getTIFFField(IceyeConstants.TIFFTagImageLength).getAsInt(0);
-            String productType = (String) getFromJSON(IceyeConstants.product_type);
+            imageHeight = rootIFD.getTIFFField(IceyeStacConstants.TIFFTagImageWidth).getAsInt(0);
+            imageWidth = rootIFD.getTIFFField(IceyeStacConstants.TIFFTagImageLength).getAsInt(0);
+            String productType = (String) getFromJSON(IceyeStacConstants.product_type);
 
             Product product = new Product(inputFile.getName(), productType, imageWidth, imageHeight, this);
             product.setFileLocation(inputFile);
@@ -130,8 +133,8 @@ public abstract class IceyeAMLCPXProductReader extends SARReader {
             product.setModified(false);
             File qlFile = getQuicklookFile(inputFile);
             if (qlFile != null)
-                addQuicklook(product, qlFile.getName().endsWith(IceyeConstants.qlk_png) ? IceyeConstants.Quicklook
-                        : IceyeConstants.Thumbnail, qlFile);
+                addQuicklook(product, qlFile.getName().endsWith(IceyeStacConstants.qlk_png) ? IceyeStacConstants.Quicklook
+                        : IceyeStacConstants.Thumbnail, qlFile);
 
             return product;
 
@@ -142,10 +145,28 @@ public abstract class IceyeAMLCPXProductReader extends SARReader {
         return null;
     }
 
+    private static Document convertStringToXMLDocument(String xmlString) {
+        //Parser that produces DOM object trees from XML content
+        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+
+        //API to obtain DOM Document instance
+        DocumentBuilder builder = null;
+        try {
+            //Create DocumentBuilder with default configuration
+            builder = factory.newDocumentBuilder();
+
+            //Parse the content to Document object
+            return builder.parse(new InputSource(new StringReader(xmlString)));
+        } catch (Exception e) {
+            SystemUtils.LOG.severe(e.getMessage());
+        }
+        return null;
+    }
+
     private File getQuicklookFile(File inputFile) {
         File dir = inputFile.getParentFile();
         File[] files = dir.listFiles();
-        for (String suffix : new String[] { IceyeConstants.qlk_png, IceyeConstants.thm_png }) {
+        for (String suffix : new String[] { IceyeStacConstants.qlk_png, IceyeStacConstants.thm_png }) {
             for (File f : files) {
                 if (f.getName().toLowerCase().endsWith(suffix))
                     return f;
@@ -166,7 +187,7 @@ public abstract class IceyeAMLCPXProductReader extends SARReader {
 
     static UTC parseUTC(String input) {
         try {
-            return UTC.parse(input.substring(0, input.length() - 1), IceyeConstants.standardDateFormat);
+            return UTC.parse(input.substring(0, input.length() - 1), IceyeStacConstants.standardDateFormat);
         } catch (Exception e) {
             SystemUtils.LOG.severe("Unable to parse date: " + e.getMessage());
             return null;
@@ -184,7 +205,7 @@ public abstract class IceyeAMLCPXProductReader extends SARReader {
         try {
             MetadataElement origMeta = AbstractMetadata.addOriginalProductMetadata(root);
             AbstractMetadataIO.AddXMLMetadata(
-                    JSONProductDirectory.jsonToXML(IceyeConstants.ProductMetadata, metadataJSON),
+                    JSONProductDirectory.jsonToXML(IceyeStacConstants.ProductMetadata, metadataJSON),
                     origMeta);
         } catch (Exception e) {
             SystemUtils.LOG.severe("Error reading original metadata: " + e.getMessage());
@@ -192,95 +213,91 @@ public abstract class IceyeAMLCPXProductReader extends SARReader {
 
         MetadataElement absRoot = AbstractMetadata.addAbstractedMetadataHeader(root);
 
-        String productName = addMetaString(absRoot, AbstractMetadata.PRODUCT, IceyeConstants.product_name);
-        String productType = addMetaString(absRoot, AbstractMetadata.PRODUCT_TYPE, IceyeConstants.product_type);
+        String productName = addMetaString(absRoot, AbstractMetadata.PRODUCT, IceyeStacConstants.product_name);
+        String productType = addMetaString(absRoot, AbstractMetadata.PRODUCT_TYPE, IceyeStacConstants.product_type);
 
-        product.setDescription(productName + " - " + productType + " - " + getFromJSON(IceyeConstants.platform));
-        product.setStartTime(parseUTC((String) getFromJSON(IceyeConstants.acquisition_start_utc)));
-        product.setEndTime(parseUTC((String) getFromJSON(IceyeConstants.acquisition_end_utc)));
+        product.setDescription(productName + " - " + productType + " - " + getFromJSON(IceyeStacConstants.platform));
+        product.setStartTime(parseUTC((String) getFromJSON(IceyeStacConstants.acquisition_start_utc)));
+        product.setEndTime(parseUTC((String) getFromJSON(IceyeStacConstants.acquisition_end_utc)));
 
         try {
-            String acquisitionMode = (String) getFromJSON(IceyeConstants.acquisition_mode);
-            if (acquisitionMode.equalsIgnoreCase(IceyeConstants.spot))
-                acquisitionMode = IceyeConstants.spotlight;
-            else if (acquisitionMode.equalsIgnoreCase(IceyeConstants.strip))
-                acquisitionMode = IceyeConstants.stripmap;
+            String acquisitionMode = (String) getFromJSON(IceyeStacConstants.acquisition_mode);
+            if (acquisitionMode.equalsIgnoreCase(IceyeStacConstants.spot))
+                acquisitionMode = IceyeStacConstants.spotlight;
+            else if (acquisitionMode.equalsIgnoreCase(IceyeStacConstants.strip))
+                acquisitionMode = IceyeStacConstants.stripmap;
             AbstractMetadata.setAttribute(absRoot, AbstractMetadata.ACQUISITION_MODE, acquisitionMode);
         } catch (Exception e) {
             SystemUtils.LOG.severe("Unable to set acquisition mode: " + e.getMessage());
         }
 
-        addMetaString(absRoot, AbstractMetadata.SPH_DESCRIPTOR, IceyeConstants.product_type);
+        addMetaString(absRoot, AbstractMetadata.SPH_DESCRIPTOR, IceyeStacConstants.product_type);
         AbstractMetadata.setAttribute(absRoot, AbstractMetadata.MISSION, Missions.ICEYE);
-        addMetaLong(absRoot, AbstractMetadata.data_take_id, IceyeConstants.data_take_id);
+        addMetaLong(absRoot, AbstractMetadata.data_take_id, IceyeStacConstants.data_take_id);
 
-        addMetaString(absRoot, AbstractMetadata.antenna_pointing, IceyeConstants.antenna_pointing);
-        lookLeft = absRoot.getAttributeString(AbstractMetadata.antenna_pointing).equals(IceyeConstants.left);
+        addMetaString(absRoot, AbstractMetadata.antenna_pointing, IceyeStacConstants.antenna_pointing);
+        lookLeft = absRoot.getAttributeString(AbstractMetadata.antenna_pointing).equals(IceyeStacConstants.left);
 
-        addMetaString(absRoot, AbstractMetadata.PASS, IceyeConstants.PASS);
-        addMetaUTC(absRoot, AbstractMetadata.PROC_TIME, IceyeConstants.PROC_TIME);
-        addMetaString(absRoot, AbstractMetadata.ProcessingSystemIdentifier, IceyeConstants.ProcessngSystemIdentifier);
-        addMetaDouble(absRoot, AbstractMetadata.incidence_near, IceyeConstants.incidence_near);
-        addMetaDouble(absRoot, AbstractMetadata.incidence_far, IceyeConstants.incidence_far);
-        AbstractMetadata.setAttribute(absRoot, AbstractMetadata.geo_ref_system, IceyeConstants.geo_ref_system_default);
-        addMetaUTC(absRoot, AbstractMetadata.first_line_time, IceyeConstants.first_line_time);
-        addMetaUTC(absRoot, AbstractMetadata.last_line_time, IceyeConstants.last_line_time);
+        addMetaString(absRoot, AbstractMetadata.PASS, IceyeStacConstants.PASS);
+        addMetaUTC(absRoot, AbstractMetadata.PROC_TIME, IceyeStacConstants.PROC_TIME);
+        addMetaString(absRoot, AbstractMetadata.ProcessingSystemIdentifier, IceyeStacConstants.ProcessingSystemIdentifier);
+        addMetaDouble(absRoot, AbstractMetadata.incidence_near, IceyeStacConstants.incidence_near);
+        addMetaDouble(absRoot, AbstractMetadata.incidence_far, IceyeStacConstants.incidence_far);
+        AbstractMetadata.setAttribute(absRoot, AbstractMetadata.geo_ref_system, IceyeStacConstants.geo_ref_system_default);
+        addMetaUTC(absRoot, AbstractMetadata.first_line_time, IceyeStacConstants.first_line_time);
+        addMetaUTC(absRoot, AbstractMetadata.last_line_time, IceyeStacConstants.last_line_time);
 
-        String polarization = (String) ((JSONArray) getFromJSON(IceyeConstants.polarization)).get(0);
+        String polarization = (String) ((JSONArray) getFromJSON(IceyeStacConstants.polarization)).get(0);
         AbstractMetadata.setAttribute(absRoot, AbstractMetadata.mds1_tx_rx_polar, polarization);
 
-        addMetaLong(absRoot, AbstractMetadata.azimuth_looks, IceyeConstants.azimuth_looks);
-        addMetaLong(absRoot, AbstractMetadata.range_looks, IceyeConstants.range_looks);
-        addMetaDouble(absRoot, AbstractMetadata.azimuth_spacing, IceyeConstants.azimuth_spacing);
-        addMetaDouble(absRoot, AbstractMetadata.range_spacing, IceyeConstants.range_spacing);
+        addMetaDouble(absRoot, AbstractMetadata.azimuth_spacing, IceyeStacConstants.azimuth_spacing);
+        addMetaDouble(absRoot, AbstractMetadata.range_spacing, IceyeStacConstants.range_spacing);
 
-        double prf = addMetaDouble(absRoot, AbstractMetadata.pulse_repetition_frequency, IceyeConstants.pulse_repetition_frequency);
-        AbstractMetadata.setAttribute(absRoot, AbstractMetadata.line_time_interval, 1 / prf);
-        addMetaMHz(absRoot, AbstractMetadata.radar_frequency, IceyeConstants.radar_frequency);
+        addMetaDouble(absRoot, AbstractMetadata.pulse_repetition_frequency, IceyeStacConstants.pulse_repetition_frequency);
+        // double proc_prf = (double) getFromJSON("iceye:processing_prf");
+        // AbstractMetadata.setAttribute(absRoot, AbstractMetadata.line_time_interval, 7.116325589634343e-05);
+        addMetaMHz(absRoot, AbstractMetadata.radar_frequency, IceyeStacConstants.radar_frequency);
 
         double totalSize = product.getFileLocation().length() / (1024.0f * 1024.0f);
         AbstractMetadata.setAttribute(absRoot, AbstractMetadata.TOT_SIZE, totalSize);
 
-        addMetaLong(absRoot, AbstractMetadata.num_samples_per_line, IceyeConstants.num_samples_per_line);
-        addMetaLong(absRoot, AbstractMetadata.num_output_lines, IceyeConstants.num_output_lines);
+        AbstractMetadata.setAttribute(absRoot, AbstractMetadata.num_output_lines, product.getSceneRasterWidth());
+        AbstractMetadata.setAttribute(absRoot, AbstractMetadata.num_samples_per_line, product.getSceneRasterHeight());
         // subset_offset_x and subset_offset_y set to zero by default
-        String projection = (String) getFromJSON(IceyeConstants.projection_plane);
-        AbstractMetadata.setAttribute(absRoot, AbstractMetadata.srgr_flag,
-                projection.equals(IceyeConstants.ground) ? 1 : 0);
 
-        addMetaDouble(absRoot, AbstractMetadata.avg_scene_height, IceyeConstants.avg_scene_height);
+        addMetaDouble(absRoot, AbstractMetadata.avg_scene_height, IceyeStacConstants.avg_scene_height);
         // lat_pixel_res and lon_pixel_res set to 99999.0 by default
-        addMetaDouble(absRoot, AbstractMetadata.slant_range_to_first_pixel, IceyeConstants.slant_range_to_first_pixel);
+        addMetaDouble(absRoot, AbstractMetadata.slant_range_to_first_pixel, IceyeStacConstants.slant_range_to_first_pixel);
 
         AbstractMetadata.setAttribute(absRoot, AbstractMetadata.ant_elev_corr_flag,
-                IceyeConstants.ANT_ELEV_CORR_FLAG_DEFAULT_VALUE);
+                IceyeStacConstants.ANT_ELEV_CORR_FLAG_DEFAULT_VALUE);
         AbstractMetadata.setAttribute(absRoot, AbstractMetadata.range_spread_comp_flag,
-                IceyeConstants.RANGE_SPREAD_COMP_FLAG_DEFAULT_VALUE);
+                IceyeStacConstants.RANGE_SPREAD_COMP_FLAG_DEFAULT_VALUE);
         AbstractMetadata.setAttribute(absRoot, AbstractMetadata.replica_power_corr_flag,
-                IceyeConstants.REPLICA_POWER_CORR_FLAG_DEFAULT_VALUE);
+                IceyeStacConstants.REPLICA_POWER_CORR_FLAG_DEFAULT_VALUE);
         AbstractMetadata.setAttribute(absRoot, AbstractMetadata.abs_calibration_flag,
-                IceyeConstants.ABS_CALIBRATION_FLAG_DEFAULT_VALUE);
+                IceyeStacConstants.ABS_CALIBRATION_FLAG_DEFAULT_VALUE);
 
         Double calibration_factor = addMetaDouble(absRoot, AbstractMetadata.calibration_factor,
-                IceyeConstants.calibration_factor); // for SNAP version
+                IceyeStacConstants.calibration_factor); // for SNAP version
         AbstractMetadata.setAttribute(AbstractMetadata.getOriginalProductMetadata(product),
                 AbstractMetadata.calibration_factor,
                 calibration_factor); // for SNAP version <= 9.0.4
 
         AbstractMetadata.setAttribute(absRoot, AbstractMetadata.inc_angle_comp_flag,
-                IceyeConstants.INC_ANGLE_COMP_FLAG_DEFAULT_VALUE);
+                IceyeStacConstants.INC_ANGLE_COMP_FLAG_DEFAULT_VALUE);
         // ref_inc_angle set to 99999.0 by default
         // ref_slant_range set to 99999.0 by default
         // ref_slant_range_exp set to 99999.0 by default
         // rescaling_factor set to 99999.0 by default
-        addMetaMHz(absRoot, AbstractMetadata.range_sampling_rate, IceyeConstants.range_sampling_rate);
-        addMetaMHz(absRoot, AbstractMetadata.range_bandwidth, IceyeConstants.range_bandwidth);
-        addMetaDouble(absRoot, AbstractMetadata.azimuth_bandwidth, IceyeConstants.azimuth_bandwidth);
+        addMetaMHz(absRoot, AbstractMetadata.range_sampling_rate, IceyeStacConstants.range_sampling_rate);
+        addMetaMHz(absRoot, AbstractMetadata.range_bandwidth, IceyeStacConstants.range_bandwidth);
+        addMetaDouble(absRoot, AbstractMetadata.azimuth_bandwidth, IceyeStacConstants.azimuth_bandwidth);
 
         AbstractMetadata.setAttribute(absRoot, AbstractMetadata.coregistered_stack,
-                IceyeConstants.COREGISTERED_STACK_DEFAULT_VALUE);
+                IceyeStacConstants.COREGISTERED_STACK_DEFAULT_VALUE);
         AbstractMetadata.setAttribute(absRoot, AbstractMetadata.bistatic_correction_applied,
-                IceyeConstants.BISTATIC_CORRECTION_APPLIED_DEFAULT);
+                IceyeStacConstants.BISTATIC_CORRECTION_APPLIED_DEFAULT);
 
         addOrbitStateVectors(absRoot);
         addProductSpecificMetadata(absRoot);
@@ -292,22 +309,22 @@ public abstract class IceyeAMLCPXProductReader extends SARReader {
         try {
             MetadataElement list = meta.getElement(AbstractMetadata.orbit_state_vectors);
 
-            JSONArray states = (JSONArray) getFromJSON(IceyeConstants.orbit_states);
+            JSONArray states = (JSONArray) getFromJSON(IceyeStacConstants.orbit_states);
             for (int i = 0; i < states.size(); i++) {
                 MetadataElement vector = new MetadataElement(AbstractMetadata.orbit_vector + (i + 1));
                 JSONObject state = (JSONObject) states.get(i);
 
-                UTC time = parseUTC((String) state.get(IceyeConstants.time));
+                UTC time = parseUTC((String) state.get(IceyeStacConstants.time));
                 vector.setAttributeUTC(AbstractMetadata.orbit_vector_time, time);
                 if (i == 0)
                     meta.setAttributeUTC(AbstractMetadata.STATE_VECTOR_TIME, time);
 
-                JSONArray pos = (JSONArray) getFromJSON(state, IceyeConstants.position);
+                JSONArray pos = (JSONArray) getFromJSON(state, IceyeStacConstants.position);
                 vector.setAttributeDouble(AbstractMetadata.orbit_vector_x_pos, (Double) pos.get(0));
                 vector.setAttributeDouble(AbstractMetadata.orbit_vector_y_pos, (Double) pos.get(1));
                 vector.setAttributeDouble(AbstractMetadata.orbit_vector_z_pos, (Double) pos.get(2));
 
-                JSONArray vel = (JSONArray) getFromJSON(state, IceyeConstants.velocity);
+                JSONArray vel = (JSONArray) getFromJSON(state, IceyeStacConstants.velocity);
                 vector.setAttributeDouble(AbstractMetadata.orbit_vector_x_vel, (Double) vel.get(0));
                 vector.setAttributeDouble(AbstractMetadata.orbit_vector_y_vel, (Double) vel.get(1));
                 vector.setAttributeDouble(AbstractMetadata.orbit_vector_z_vel, (Double) vel.get(2));
@@ -338,21 +355,27 @@ public abstract class IceyeAMLCPXProductReader extends SARReader {
         return null;
     }
 
-    private void addMetaLong(MetadataElement meta, String tag, String keyString) {
+    void addMetaLong(MetadataElement meta, String tag, String keyString) {
         try {
             AbstractMetadata.setAttribute(meta, tag, (Long) getFromJSON(keyString));
         } catch (Exception e) {
-            SystemUtils.LOG.severe("Unable to parse UTC from metadata :: tag: " + tag);
+            SystemUtils.LOG.severe("Unable to parse long from metadata :: tag: " + tag);
         }
     }
 
     private Double addMetaDouble(MetadataElement meta, String tag, String keyString) {
+        Double retval = null;
         try {
-            Double value = (Double) getFromJSON(keyString);
-            AbstractMetadata.setAttribute(meta, tag, value);
-            return value;
+            Object value = getFromJSON(keyString);
+            if (value instanceof Long) {
+                retval = ((Long) value).doubleValue();
+            } else {
+                retval = (Double) getFromJSON(keyString);
+            }
+            AbstractMetadata.setAttribute(meta, tag, retval);
+            return retval;
         } catch (Exception e) {
-            SystemUtils.LOG.severe("Unable to parse doube from metadata :: tag: " + tag);
+            SystemUtils.LOG.severe("Unable to parse double from metadata :: tag: " + tag);
         }
         return null;
     }
@@ -370,7 +393,7 @@ public abstract class IceyeAMLCPXProductReader extends SARReader {
     }
 
     static Object getFromJSON(JSONObject obj, String keyString) {
-        String[] keys = keyString.split(IceyeConstants.SEP);
+        String[] keys = keyString.split(IceyeStacConstants.SEP);
         int i = 0;
         while (i < keys.length - 1) {
             if (obj == null) {
@@ -386,7 +409,7 @@ public abstract class IceyeAMLCPXProductReader extends SARReader {
     }
 
     private void addGeoCodingToProduct(Product product, TIFFImageMetadata tiffMetadata) {
-        double[] tr = tiffMetadata.getRootIFD().getTIFFField(IceyeConstants.TIFFTagModelTransformation).getAsDoubles();
+        double[] tr = tiffMetadata.getRootIFD().getTIFFField(IceyeStacConstants.TIFFTagModelTransformation).getAsDoubles();
         double lonUL, latUL, lonUR, latUR, lonLL, latLL, lonLR, latLR;
 
         // compute corner coordinates using affine transformation from geotiff
@@ -427,15 +450,15 @@ public abstract class IceyeAMLCPXProductReader extends SARReader {
     }
 
     void addBandsToProduct(Product product) {
-        String polarization = (String) ((JSONArray) getFromJSON(IceyeConstants.polarization)).get(0);
-        String bandName = IceyeConstants.amplitude_band_prefix + polarization;
+        String polarization = (String) ((JSONArray) getFromJSON(IceyeStacConstants.polarization)).get(0);
+        String bandName = IceyeStacConstants.amplitude_band_prefix + polarization;
 
-        final Band ampBand = new Band(bandName, ProductData.TYPE_FLOAT32, imageWidth, imageHeight);
+        final Band ampBand = new Band(bandName, ProductData.TYPE_UINT16, imageWidth, imageHeight);
         ampBand.setUnit(Unit.AMPLITUDE);
         ampBand.setNoDataValue(0);
         ampBand.setNoDataValueUsed(true);
         product.addBand(ampBand);
-        bandMap.put(ampBand, IceyeConstants.AMPLITUDE_BAND_INDEX);
+        bandMap.put(ampBand, IceyeStacConstants.AMPLITUDE_BAND_INDEX);
 
         addProductSpecificBands(product, polarization);
     }
@@ -451,7 +474,7 @@ public abstract class IceyeAMLCPXProductReader extends SARReader {
         float[] incidenceAngleList = new float[gridWidth * gridHeight];
 
         try {
-            double[] coeffs = getDoublesFromJSON(IceyeConstants.inc_angle_coeffs);
+            double[] coeffs = getDoublesFromJSON(IceyeStacConstants.inc_angle_coeffs);
             for (int i = 0; i < gridHeight; i++) {
                 for (int j = 0; j < gridWidth; j++) {
                     incidenceAngleList[i * gridWidth + j] = (float) applyPolynomial(coeffs, j * subSamplingX);
@@ -498,26 +521,35 @@ public abstract class IceyeAMLCPXProductReader extends SARReader {
         return coeffs;
     }
 
+    private static double[] getDoublesFromJSONArray(JSONArray array) {
+        double[] coeffs = new double[array.size()];
+        for (int i = 0; i < array.size(); i++)
+            if (array.get(i) instanceof Double)
+                coeffs[i] = (double) array.get(i);
+        return coeffs;
+    }
+
     static double applyPolynomial(double[] coeffs, double t) {
-        double sum = coeffs[coeffs.length - 1];
-        for (int i = coeffs.length-1; i > 0 ; i--) {
-            sum += sum * t + coeffs[i-1];
+        // double sum = coeffs[coeffs.length - 1];
+        double sum = 0;
+        for (int i = coeffs.length-1; i >= 0 ; i--) {
+            sum += sum * t + coeffs[i];
         }
-        return sum;
+            return sum;
     }
 
     private void addDopplerCentroidCoefficients(Product product) {
         try {
-            JSONArray centroid_estimates = (JSONArray) getFromJSON(IceyeConstants.centroid_estimates);
+            JSONArray centroid_estimates = (JSONArray) getFromJSON(IceyeStacConstants.centroid_estimates);
+            JSONArray centroid_times = (JSONArray) getFromJSON(IceyeStacConstants.doppler_centroid_datetimes);
             int size = centroid_estimates.size();
 
             DopplerCentroidCoefficientList[] dopList = new DopplerCentroidCoefficientList[size];
             for (int i = 0; i < size; i++) {
                 DopplerCentroidCoefficientList dop = new DopplerCentroidCoefficientList();
                 dopList[i] = dop;
-                JSONObject estimate = (JSONObject) centroid_estimates.get(i);
-                dop.time = parseUTC((String) estimate.get(IceyeConstants.time));
-                dop.coefficients = getDoublesFromJSON(estimate, IceyeConstants.coeffs);
+                dop.time = parseUTC((String) centroid_times.get(i));
+                dop.coefficients = getDoublesFromJSONArray((JSONArray) centroid_estimates.get(i));
             }
 
             MetadataElement absRoot = AbstractMetadata.getAbstractedMetadata(product);
@@ -525,7 +557,7 @@ public abstract class IceyeAMLCPXProductReader extends SARReader {
             AbstractMetadata.setDopplerCentroidCoefficients(absRoot, dopList);
 
             if (absRoot.getAttributeString(AbstractMetadata.ACQUISITION_MODE)
-                    .equalsIgnoreCase(IceyeConstants.spotlight)) {
+                    .equalsIgnoreCase(IceyeStacConstants.spotlight)) {
                 final MetadataElement dopplerSpotlightElem = new MetadataElement("dopplerSpotlight");
                 absRoot.addElement(dopplerSpotlightElem);
                 addDopplerRateAndCentroidSpotlight(dopplerSpotlightElem, dopList);
@@ -538,7 +570,7 @@ public abstract class IceyeAMLCPXProductReader extends SARReader {
 
     private void addDopplerRateAndCentroidSpotlight(MetadataElement elem, DopplerCentroidCoefficientList[] dopList) {
         try {
-            double[] dopplerRateCoeffs = getDoublesFromJSON(IceyeConstants.doppler_rate_coffs);
+            double[] dopplerRateCoeffs = getDoublesFromJSON(IceyeStacConstants.doppler_rate_coffs);
             String dopplerRateSpotlightStr = Arrays.toString(dopplerRateCoeffs).replace("]", "").replace("[", "");
 
             AbstractMetadata.addAbstractedAttribute(elem, "dopplerRateSpotlight",
