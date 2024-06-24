@@ -1,3 +1,18 @@
+/*
+ * Copyright (C) 2024 by SkyWatch Space Applications Inc. http://www.skywatch.com
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the Free
+ * Software Foundation; either version 3 of the License, or (at your option)
+ * any later version.
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+ * more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, see http://www.gnu.org/licenses/
+ */
 package eu.esa.sar.sentinel1.gpf.etadcorrectors;
 
 import com.bc.ceres.core.ProgressMonitor;
@@ -214,8 +229,7 @@ import java.util.Map;
 
 	@Override
     protected void getCorrectionForCurrentTile(final String layer, final int x0, final int y0, final int w, final int h,
-                                               final int burstIndex, final double[][] correction, final double scale)
-            throws Exception {
+                                               final int burstIndex, final double[][] correction, final double scale) {
 
         int prodSubswathIndex = -1;
         if (subSwath.subSwathName.toLowerCase().equals("iw1")) {
@@ -289,24 +303,18 @@ import java.util.Map;
                             slavePixelPos.x - sourceRectangle.x, slavePixelPos.y - sourceRectangle.y,
                             sourceRectangle.width, sourceRectangle.height, resamplingIndex);
 
-                    final double samplePhase = selectedResampling.resample(resamplingRasterPhase, resamplingIndex);
-                    final double cosPhase = FastMath.cos(samplePhase);
-                    final double sinPhase = FastMath.sin(samplePhase);
                     double sampleI = selectedResampling.resample(resamplingRasterI, resamplingIndex);
-                    double sampleQ = selectedResampling.resample(resamplingRasterQ, resamplingIndex);
 
-                    double rerampRemodI;
+                    double rerampRemodI, rerampRemodQ;
                     if (Double.isNaN(sampleI)) {
-                        sampleI = noDataValue;
                         rerampRemodI = noDataValue;
-                    } else {
-                        rerampRemodI = sampleI * cosPhase + sampleQ * sinPhase;
-                    }
-
-                    double rerampRemodQ;
-                    if (Double.isNaN(sampleQ)) {
                         rerampRemodQ = noDataValue;
                     } else {
+                        double sampleQ = selectedResampling.resample(resamplingRasterQ, resamplingIndex);
+                        final double samplePhase = selectedResampling.resample(resamplingRasterPhase, resamplingIndex);
+                        final double cosPhase = FastMath.cos(samplePhase);
+                        final double sinPhase = FastMath.sin(samplePhase);
+                        rerampRemodI = sampleI * cosPhase + sampleQ * sinPhase;
                         rerampRemodQ = -sampleI * sinPhase + sampleQ * cosPhase;
                     }
 

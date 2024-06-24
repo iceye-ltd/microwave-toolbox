@@ -36,7 +36,11 @@ import java.util.Map;
  */
 public class S1ETADCorrectionOpUI extends BaseOperatorUI {
 
-    private final JLabel etadFileLabel = new JLabel("ETAD File:");
+    private final JRadioButton autoDownloadRadioButton = new JRadioButton("Auto-download ETAD File");
+    private final JRadioButton manualETADRadioButton = new JRadioButton("Specify ETAD File:");
+    private final ButtonGroup etadButtonGroup = new ButtonGroup();
+
+    private final JLabel etadFileLabel = new JLabel("");
     private final JTextField etadFile = new JTextField("");
     private final JButton etadFileBrowseButton = new JButton("...");
     private final JComboBox resamplingType = new JComboBox(ResamplingFactory.resamplingNames);
@@ -66,6 +70,23 @@ public class S1ETADCorrectionOpUI extends BaseOperatorUI {
         initializeOperatorUI(operatorName, parameterMap);
         final JComponent panel = createPanel();
         initParameters();
+
+        etadButtonGroup.add(autoDownloadRadioButton);
+        etadButtonGroup.add(manualETADRadioButton);
+        autoDownloadRadioButton.setSelected(true); // Default to auto-download
+
+        etadFile.setEnabled(false);
+        etadFileBrowseButton.setEnabled(false);
+
+        autoDownloadRadioButton.addActionListener(e -> {
+            etadFile.setEnabled(false);
+            etadFileBrowseButton.setEnabled(false);
+        });
+
+        manualETADRadioButton.addActionListener(e -> {
+            etadFile.setEnabled(true);
+            etadFileBrowseButton.setEnabled(true);
+        });
 
         etadFile.setColumns(20);
 
@@ -260,10 +281,21 @@ public class S1ETADCorrectionOpUI extends BaseOperatorUI {
 
         if(sumOfAzimuthCorrections != null) {
             sumOfAzimuthCorrectionsCheckBox.setSelected(sumOfAzimuthCorrections);
+            if (sumOfAzimuthCorrections) {
+                geodeticCorrectionAzCheckBox.setEnabled(false);
+                bistaticShiftCorrectionAzCheckBox.setEnabled(false);
+                fmMismatchCorrectionAzCheckBox.setEnabled(false);
+            }
         }
 
         if(sumOfRangeCorrections != null) {
             sumOfRangeCorrectionsCheckBox.setSelected(sumOfRangeCorrections);
+            if (sumOfRangeCorrections) {
+                troposphericCorrectionRgCheckBox.setEnabled(false);
+                ionosphericCorrectionRgCheckBox.setEnabled(false);
+                geodeticCorrectionRgCheckBox.setEnabled(false);
+                dopplerShiftCorrectionRgCheckBox.setEnabled(false);
+            }
         }
     }
 
@@ -274,6 +306,14 @@ public class S1ETADCorrectionOpUI extends BaseOperatorUI {
 
     @Override
     public void updateParameters() {
+
+        if (paramMap.containsKey("etadFile")) {
+            manualETADRadioButton.setSelected(true);
+            etadFile.setEnabled(true);
+            etadFileBrowseButton.setEnabled(true);
+        } else {
+            autoDownloadRadioButton.setSelected(true);
+        }
 
         final String etadFileStr = etadFile.getText();
         if (!etadFileStr.isEmpty()) {
@@ -301,8 +341,21 @@ public class S1ETADCorrectionOpUI extends BaseOperatorUI {
         gbc.gridx = 0;
         gbc.gridy++;
         DialogUtils.addComponent(contentPane, gbc, "Resampling Type:", resamplingType);
+
+        gbc.gridx = 0;
         gbc.gridy++;
-        DialogUtils.addInnerPanel(contentPane, gbc, etadFileLabel, etadFile, etadFileBrowseButton);
+        contentPane.add(autoDownloadRadioButton, gbc);
+        gbc.gridy++;
+        contentPane.add(manualETADRadioButton, gbc);
+
+        final JPanel innerPane = new JPanel(new GridBagLayout());
+        final GridBagConstraints gbc3 = DialogUtils.createGridBagConstraints();
+        innerPane.add(etadFile, gbc3);
+        gbc3.gridx = 1;
+        innerPane.add(etadFileBrowseButton, gbc3);
+
+        gbc.gridx = 1;
+        contentPane.add(innerPane, gbc);
 
         gbc.gridx = 0;
         gbc.gridy++;
@@ -310,6 +363,12 @@ public class S1ETADCorrectionOpUI extends BaseOperatorUI {
         final GridBagConstraints gbc2 = DialogUtils.createGridBagConstraints();
         correctionLayerSelectionPanel.setBorder(BorderFactory.createTitledBorder("Select correction layers:"));
 
+        gbc2.gridx = 0;
+        correctionLayerSelectionPanel.add(sumOfRangeCorrectionsCheckBox, gbc2);
+        gbc2.gridx = 1;
+        correctionLayerSelectionPanel.add(sumOfAzimuthCorrectionsCheckBox, gbc2);
+
+        gbc2.gridy++;
         gbc2.gridx = 0;
         correctionLayerSelectionPanel.add(troposphericCorrectionRgCheckBox, gbc2);
         gbc2.gridx = 1;
@@ -330,12 +389,6 @@ public class S1ETADCorrectionOpUI extends BaseOperatorUI {
         gbc2.gridy++;
         gbc2.gridx = 0;
         correctionLayerSelectionPanel.add(dopplerShiftCorrectionRgCheckBox, gbc2);
-        gbc2.gridx = 1;
-        correctionLayerSelectionPanel.add(sumOfAzimuthCorrectionsCheckBox, gbc2);
-
-        gbc2.gridy++;
-        gbc2.gridx = 0;
-        correctionLayerSelectionPanel.add(sumOfRangeCorrectionsCheckBox, gbc2);
         gbc2.gridx = 1;
 //        correctionLayerSelectionPanel.add(interferometricPhaseCorrectionRgCheckBox, gbc2);
 

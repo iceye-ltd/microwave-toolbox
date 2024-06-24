@@ -15,6 +15,7 @@
  */
 package eu.esa.sar.calibration.gpf;
 
+import com.bc.ceres.annotation.STTM;
 import eu.esa.sar.commons.test.SARTests;
 import eu.esa.sar.commons.test.TestData;
 import org.esa.snap.core.datamodel.Product;
@@ -105,6 +106,15 @@ public class TestCalibrationOp {
         processFile(TestData.inputS1_StripmapSLC, "sigma0_VV", expected);
     }
 
+    @Test
+    @STTM("SNAP-3672")
+    public void testProcessingCapella_StripmapSLC() throws Exception {
+
+        final float[] expected = new float[] {0.01825511f,0.04138892f,0.04425726f};
+        processFile(TestData.inputCapella_StripmapSLC, "sigma0_HH", expected);
+        System.out.println();
+    }
+
     /**
      * Processes a product and compares it to processed product known to be correct
      *
@@ -115,17 +125,18 @@ public class TestCalibrationOp {
      */
     private void processFile(final File inputFile, final String bandName, final float[] expected) throws Exception {
 
-        final Product sourceProduct = TestUtils.readSourceProduct(inputFile);
+        try(final Product sourceProduct = TestUtils.readSourceProduct(inputFile)) {
 
-        final CalibrationOp op = (CalibrationOp) spi.createOperator();
-        assertNotNull(op);
-        op.setSourceProduct(sourceProduct);
+            final CalibrationOp op = (CalibrationOp) spi.createOperator();
+            assertNotNull(op);
+            op.setSourceProduct(sourceProduct);
 
-        // get targetProduct: execute initialize()
-        final Product targetProduct = op.getTargetProduct();
-        TestUtils.verifyProduct(targetProduct, true, true, true);
+            // get targetProduct: execute initialize()
+            final Product targetProduct = op.getTargetProduct();
+            TestUtils.verifyProduct(targetProduct, true, true, true);
 
-        TestUtils.comparePixels(targetProduct, bandName, expected);
+            TestUtils.comparePixels(targetProduct, bandName, expected);
+        }
     }
 
     @Test
