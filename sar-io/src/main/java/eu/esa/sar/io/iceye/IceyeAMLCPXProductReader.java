@@ -256,7 +256,7 @@ public abstract class IceyeAMLCPXProductReader extends SARReader {
         addMetaDouble(absRoot, AbstractMetadata.pulse_repetition_frequency, IceyeStacConstants.pulse_repetition_frequency);
         // double proc_prf = (double) getFromJSON("iceye:processing_prf");
         // AbstractMetadata.setAttribute(absRoot, AbstractMetadata.line_time_interval, 7.116325589634343e-05);
-        addMetaMHz(absRoot, AbstractMetadata.radar_frequency, IceyeStacConstants.radar_frequency);
+        AbstractMetadata.setAttribute(absRoot, AbstractMetadata.radar_frequency, 1000 * (double) getFromJSON(IceyeStacConstants.radar_frequency));
 
         double totalSize = product.getFileLocation().length() / (1024.0f * 1024.0f);
         AbstractMetadata.setAttribute(absRoot, AbstractMetadata.TOT_SIZE, totalSize);
@@ -290,8 +290,8 @@ public abstract class IceyeAMLCPXProductReader extends SARReader {
         // ref_slant_range set to 99999.0 by default
         // ref_slant_range_exp set to 99999.0 by default
         // rescaling_factor set to 99999.0 by default
-        addMetaMHz(absRoot, AbstractMetadata.range_sampling_rate, IceyeStacConstants.range_sampling_rate);
-        addMetaMHz(absRoot, AbstractMetadata.range_bandwidth, IceyeStacConstants.range_bandwidth);
+        addMetaDouble(absRoot, AbstractMetadata.range_sampling_rate, IceyeStacConstants.range_sampling_rate);
+        addMetaDouble(absRoot, AbstractMetadata.range_bandwidth, IceyeStacConstants.range_bandwidth);
         addMetaDouble(absRoot, AbstractMetadata.azimuth_bandwidth, IceyeStacConstants.azimuth_bandwidth);
 
         AbstractMetadata.setAttribute(absRoot, AbstractMetadata.coregistered_stack,
