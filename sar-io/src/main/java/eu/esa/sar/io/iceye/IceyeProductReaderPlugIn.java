@@ -14,7 +14,7 @@ import org.esa.snap.engine_utilities.gpf.ReaderUtils;
 public class IceyeProductReaderPlugIn implements SARProductReaderPlugIn {
 
     private final String PLUGIN_DESCRIPTION = "UNDER CONSTRUCTION -- Iceye Products";
-    private final String[] FORMAT_NAMES = { "Iceye" };
+    private final String[] FORMAT_NAMES = { "IceyeProduct" };
     private final String[] FILE_PREFIXES = { "ICEYE" };
     private final String[] FILE_EXTS = { ".tif", ".h5", ".xml", ".json" };
     private final String[] METADATA_EXTS = { ".xml", ".json" };
