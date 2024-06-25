@@ -2,8 +2,7 @@ package eu.esa.sar.io.iceye;
 
 import com.bc.ceres.core.ProgressMonitor;
 import eu.esa.sar.commons.io.SARReader;
-import eu.esa.sar.io.iceye.util.IceyeConstants;
-import org.esa.snap.core.dataio.ProductReader;
+import org.esa.snap.core.dataio.AbstractProductReader;
 import org.esa.snap.core.dataio.ProductReaderPlugIn;
 import org.esa.snap.core.datamodel.Band;
 import org.esa.snap.core.datamodel.Product;
@@ -24,7 +23,7 @@ public class IceyeProductReader extends SARReader {
 
     private AtomicBoolean isTiff = new AtomicBoolean();
     private AtomicBoolean isNewFormat = new AtomicBoolean();
-    private ProductReader reader;
+    private AbstractProductReader reader;
 
     /**
      * Constructs a new abstract product reader.
@@ -49,7 +48,7 @@ public class IceyeProductReader extends SARReader {
      */
     @Override
     protected Product readProductNodesImpl() {
-        try {
+         try {
             final Path inputPath = ReaderUtils.getPathFromInput(getInput());
             if (inputPath == null) {
                 throw new Exception("Unable to read " + getInput());
@@ -57,7 +56,7 @@ public class IceyeProductReader extends SARReader {
             File inputFile = inputPath.toFile();
             String fileName = inputFile.getName().toLowerCase();
 
-            if (fileName.startsWith(IceyeConstants.ICEYE_FILE_PREFIX.toLowerCase())) {
+            if (fileName.startsWith(IceyeStacConstants.ICEYE_FILE_PREFIX.toLowerCase())) {
                 if (fileName.endsWith(".xml")) {
                     inputFile = FileUtils.exchangeExtension(inputFile, ".h5");
                     if (!inputFile.exists()) {
@@ -76,7 +75,7 @@ public class IceyeProductReader extends SARReader {
                     reader = new IceyeSLCProductReader(getReaderPlugIn());
                 } else if (fileName.endsWith(".tif")) {
                     isTiff.set(true);
-                    if (fileName.endsWith("aml.tif")) {
+                    if (fileName.endsWith("grd.tif") || fileName.endsWith("aml.tif")) {
                         isNewFormat.set(true);
                         reader = new IceyeAMLProductReader(getReaderPlugIn());
                     } else if (fileName.contains("cpx.tif")) {

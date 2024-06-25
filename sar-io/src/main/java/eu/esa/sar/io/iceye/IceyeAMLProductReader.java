@@ -46,10 +46,10 @@ public class IceyeAMLProductReader extends IceyeAMLCPXProductReader {
                         ProductData.TYPE_FLOAT64, "", "SRGR Coefficient");
                 AbstractMetadata.setAttribute(coefElem, AbstractMetadata.srgr_coef, (double) coeffs[i]);
             }
-            // ProductData.UTC zero_doppler_time = parseUTC((String) getFromJSON(IceyeStacConstants.zero_doppler_time_utc));
+            ProductData.UTC zero_doppler_time = parseUTC((String) getFromJSON(IceyeStacConstants.zero_doppler_time_utc));
             // ProductData.UTC zero_doppler_time = parseUTC((String) getFromJSON(IceyeStacConstants.grsr_zero_doppler_time));
-            // list.setAttributeUTC(AbstractMetadata.srgr_coef_time, zero_doppler_time);
-            list.setAttributeUTC(AbstractMetadata.srgr_coef_time, parseUTC("2023-10-12T06:59:54.124993Z"));
+            list.setAttributeUTC(AbstractMetadata.srgr_coef_time, zero_doppler_time);
+            // list.setAttributeUTC(AbstractMetadata.srgr_coef_time, parseUTC("2023-10-12T06:59:54.124993Z"));
         } catch (Exception e) {
             SystemUtils.LOG.severe("Unable to parse SRGR coefficients: " + e.getMessage());
         }
