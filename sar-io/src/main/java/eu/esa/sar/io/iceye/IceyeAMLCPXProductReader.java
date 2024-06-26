@@ -10,7 +10,6 @@ import org.esa.snap.engine_utilities.datamodel.AbstractMetadata;
 import org.esa.snap.engine_utilities.datamodel.Unit;
 import org.esa.snap.engine_utilities.datamodel.AbstractMetadata.DopplerCentroidCoefficientList;
 import org.esa.snap.engine_utilities.datamodel.metadata.AbstractMetadataIO;
-import org.esa.snap.engine_utilities.eo.Constants;
 import org.esa.snap.core.dataio.IllegalFileFormatException;
 import org.esa.snap.core.dataio.ProductReaderPlugIn;
 import org.esa.snap.core.datamodel.Band;
@@ -383,14 +382,6 @@ public abstract class IceyeAMLCPXProductReader extends SARReader {
             SystemUtils.LOG.severe("Unable to parse double from metadata :: tag: " + tag);
         }
         return null;
-    }
-
-    private void addMetaMHz(MetadataElement meta, String tag, String keyString) {
-        Object value = getFromJSON(keyString);
-        if (value instanceof Long)
-            AbstractMetadata.setAttribute(meta, tag, ((Long) value) / Constants.oneMillion);
-        else if (value instanceof Double)
-            AbstractMetadata.setAttribute(meta, tag, ((Double) value) / Constants.oneMillion);
     }
 
     Object getFromJSON(String keyString) {
