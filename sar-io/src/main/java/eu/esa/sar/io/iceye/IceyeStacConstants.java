@@ -60,6 +60,9 @@ public class IceyeStacConstants {
     static final String i_band_prefix = "i_";
     static final String q_band_prefix = "q_";
 
+    //
+    // ICEYE STAC item tags
+    //
 
     static final String iceye = "iceye:";
     static final String proj = "proj";
@@ -68,65 +71,42 @@ public class IceyeStacConstants {
     static final String view = "view:";
     static final String SEP = ",";
 
-    static final String calibration_factor          = iceye + "calibration_factor";
-    // static final String looks                       = data          + SEP + "looks";
-    
-    static final String azimuth_looks               = sar + "looks_azimuth" ;
-    // static final String range_looks                 = looks         + SEP + "rg" + SEP + "count";
-    
-    // static final String processing                  = data          + SEP + "processing";
-    
-    static final String azimuth_bandwidth           = iceye + "processing_bandwidth_azimuth";
-    static final String ProcessingSystemIdentifier   = "processing:software" + SEP + "processor";
-    static final String PROC_TIME                   = iceye + "processing_end_datetime";
-    static final String first_line_time             = iceye + "zero_doppler_start_datetime";
-    static final String last_line_time              = iceye + "zero_doppler_end_datetime";
-    static final String pulse_repetition_frequency  = iceye + "acquisition_prf";
-
-    // static final String sample                      = data          + SEP + "sample";
-    // static final String sample_size                 = sample        + SEP + "size";
-    // static final String num_samples_per_line        = sample_size   + SEP + "rg";
-    // static final String num_output_lines            = sample_size   + SEP + "az";
-    // static final String sample_sp                   = sample        + SEP + "spacing";
-    static final String azimuth_spacing             = sar + "pixel_spacing_azimuth";
-    static final String range_spacing               = sar + "pixel_spacing_range";
-
-    // static final String scene                       = data          + SEP + "scene";
-    static final String avg_scene_height            = iceye + "average_scene_height";
-    static final String inc_angle                   = view + "incidence_angle";
-    static final String inc_angle_coeffs            = iceye + "incidence_angle_coeffs";
-    static final String incidence_far               = iceye + "incidence_angle_far";
-    static final String incidence_near              = iceye + "incidence_angle_near";
-    // static final String projection                  = scene         + SEP + "projection";
-    // static final String grsr                        = projection    + SEP + "grsr";
-    static final String grsr_coefficients           = iceye + "ground_to_slant_coeff";
-    static final String zero_doppler_time_utc       = iceye + "zero_doppler_start_datetime";
-    static final String grsr_zero_doppler_time      = "datetime";
-    // static final String projection_plane            = projection    + SEP + "plane" ;
-    static final String slant_range_to_first_pixel  = iceye + "range_near";
-
-    static final String product_type                = sar + "product_type";
-    static final String product_name                = iceye + "filename";
-    
-    static final String collection                  = "collection";
-    
-    static final String antenna_pointing            = sar + "observation_direction";
     static final String acquisition_mode            = sar + "instrument_mode";
     static final String acquisition_start_utc       = "start_datetime";
-    static final String acquisition_end_utc         = "end_datetime"; // check this!
+    static final String acquisition_end_utc         = "end_datetime";
+    static final String antenna_pointing            = sar + "observation_direction";
+    static final String avg_scene_height            = iceye + "average_scene_height";
+    static final String azimuth_bandwidth           = iceye + "processing_bandwidth_azimuth";
+    static final String azimuth_looks               = sar + "looks_azimuth" ;
+    static final String azimuth_spacing             = sar + "pixel_spacing_azimuth";
+    static final String calibration_factor          = iceye + "calibration_factor";
+    static final String centroid_estimates          = iceye + "doppler_centroid_coeffs";
     static final String data_take_id                = iceye + "image_id";
-    // static final String orbit                       = collection    + SEP + "orbit";
+    static final String doppler_centroid_datetimes  = iceye + "doppler_centroid_datetimes";
+    static final String doppler_rate_coffs          = iceye + "doppler_rate_coeffs";
+    static final String first_line_time             = iceye + "zero_doppler_start_datetime";
+    static final String grsr_coefficients           = iceye + "ground_to_slant_coeff";
+    static final String grsr_zero_doppler_time      = "datetime";
+    static final String incidence_far               = iceye + "incidence_angle_far";
+    static final String incidence_near              = iceye + "incidence_angle_near";
+    static final String inc_angle                   = view + "incidence_angle";
+    static final String inc_angle_coeffs            = iceye + "incidence_angle_coeffs";
+    static final String last_line_time              = iceye + "zero_doppler_end_datetime";
     static final String orbit_states                = iceye + "orbit_states";
-    static final String position                    = "position" ;
-    static final String velocity                    = "velocity" ;
     static final String PASS                        = sat + "orbit_state";
     static final String platform                    = "platform";
     static final String polarization                = sar + "polarizations";
+    static final String ProcessingSystemIdentifier   = "processing:software" + SEP + "processor";
+    static final String position                    = "position" ;
+    static final String PROC_TIME                   = iceye + "processing_end_datetime";
+    static final String product_name                = iceye + "filename";
+    static final String product_type                = sar + "product_type";
+    static final String pulse_repetition_frequency  = iceye + "acquisition_prf";
     static final String radar_frequency             = sar + "center_frequency";
     static final String range_bandwidth             = iceye + "pulse_bandwidth";
     static final String range_sampling_rate         = iceye + "acquisition_range_sampling_rate";
-    static final String dop_param                   = collection    + SEP + "doppler_parameters";
-    static final String centroid_estimates          = iceye + "doppler_centroid_coeffs";
-    static final String doppler_centroid_datetimes  = iceye + "doppler_centroid_datetimes";
-    static final String doppler_rate_coffs          = iceye + "doppler_rate_coeffs";
+    static final String range_spacing               = sar + "pixel_spacing_range";
+    static final String slant_range_to_first_pixel  = iceye + "range_near";
+    static final String velocity                    = "velocity" ;
+    static final String zero_doppler_time_utc       = iceye + "zero_doppler_start_datetime";
 }
