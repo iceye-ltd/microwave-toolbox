@@ -244,8 +244,8 @@ public abstract class IceyeAMLCPXProductReader extends SARReader {
         addMetaDouble(absRoot, AbstractMetadata.incidence_near, IceyeStacConstants.incidence_near);
         addMetaDouble(absRoot, AbstractMetadata.incidence_far, IceyeStacConstants.incidence_far);
         AbstractMetadata.setAttribute(absRoot, AbstractMetadata.geo_ref_system, IceyeStacConstants.geo_ref_system_default);
-        addMetaUTC(absRoot, AbstractMetadata.first_line_time, IceyeStacConstants.first_line_time);
-        addMetaUTC(absRoot, AbstractMetadata.last_line_time, IceyeStacConstants.last_line_time);
+        UTC zd_start_utc = addMetaUTC(absRoot, AbstractMetadata.first_line_time, IceyeStacConstants.first_line_time);
+        UTC zd_end_utc = addMetaUTC(absRoot, AbstractMetadata.last_line_time, IceyeStacConstants.last_line_time);
 
         String polarization = (String) ((JSONArray) getFromJSON(IceyeStacConstants.polarization)).get(0);
         AbstractMetadata.setAttribute(absRoot, AbstractMetadata.mds1_tx_rx_polar, polarization);
@@ -253,16 +253,18 @@ public abstract class IceyeAMLCPXProductReader extends SARReader {
         addMetaDouble(absRoot, AbstractMetadata.azimuth_spacing, IceyeStacConstants.azimuth_spacing);
         addMetaDouble(absRoot, AbstractMetadata.range_spacing, IceyeStacConstants.range_spacing);
 
+        AbstractMetadata.setAttribute(absRoot, AbstractMetadata.num_output_lines, product.getSceneRasterHeight());
+        AbstractMetadata.setAttribute(absRoot, AbstractMetadata.num_samples_per_line, product.getSceneRasterWidth());
+
         addMetaDouble(absRoot, AbstractMetadata.pulse_repetition_frequency, IceyeStacConstants.pulse_repetition_frequency);
         // double proc_prf = (double) getFromJSON("iceye:processing_prf");
-        // AbstractMetadata.setAttribute(absRoot, AbstractMetadata.line_time_interval, 7.116325589634343e-05);
+        double zd_total_secs = (zd_end_utc.getMJD() - zd_start_utc.getMJD()) * 24 * 60 * 60;
+        AbstractMetadata.setAttribute(absRoot, AbstractMetadata.line_time_interval, zd_total_secs / product.getSceneRasterHeight());
         AbstractMetadata.setAttribute(absRoot, AbstractMetadata.radar_frequency, 1000 * (double) getFromJSON(IceyeStacConstants.radar_frequency));
 
         double totalSize = product.getFileLocation().length() / (1024.0f * 1024.0f);
         AbstractMetadata.setAttribute(absRoot, AbstractMetadata.TOT_SIZE, totalSize);
 
-        AbstractMetadata.setAttribute(absRoot, AbstractMetadata.num_output_lines, product.getSceneRasterWidth());
-        AbstractMetadata.setAttribute(absRoot, AbstractMetadata.num_samples_per_line, product.getSceneRasterHeight());
         // subset_offset_x and subset_offset_y set to zero by default
 
         addMetaDouble(absRoot, AbstractMetadata.avg_scene_height, IceyeStacConstants.avg_scene_height);
@@ -279,7 +281,7 @@ public abstract class IceyeAMLCPXProductReader extends SARReader {
                 IceyeStacConstants.ABS_CALIBRATION_FLAG_DEFAULT_VALUE);
 
         Double calibration_factor = addMetaDouble(absRoot, AbstractMetadata.calibration_factor,
-                IceyeStacConstants.calibration_factor); // for SNAP version
+                IceyeStacConstants.calibration_factor); // for SNAP version >= 10
         AbstractMetadata.setAttribute(AbstractMetadata.getOriginalProductMetadata(product),
                 AbstractMetadata.calibration_factor,
                 calibration_factor); // for SNAP version <= 9.0.4
@@ -336,12 +338,15 @@ public abstract class IceyeAMLCPXProductReader extends SARReader {
         }
     }
 
-    private void addMetaUTC(MetadataElement meta, String tag, String keyString) {
+    private UTC addMetaUTC(MetadataElement meta, String tag, String keyString) {
         try {
-            AbstractMetadata.setAttribute(meta, tag, parseUTC((String) getFromJSON(keyString)));
+            UTC utc =  parseUTC((String) getFromJSON(keyString));
+            AbstractMetadata.setAttribute(meta, tag, utc);
+            return utc;
         } catch (Exception e) {
             SystemUtils.LOG.severe("Unable to parse UTC from metadata :: tag: " + tag);
         }
+        return null;
     }
 
     private String addMetaString(MetadataElement meta, String tag, String keyString) {
